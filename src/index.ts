@@ -53,7 +53,16 @@ app.use(
   ) => {
     const code = err.statusCode ?? 500;
     logger.error({ err }, 'request failed');
-    res.status(code).json({ error: err.message ?? 'Internal error' });
+    // 4xx — intentional client-facing message ("Validation failed:
+    // email required"). 5xx — message often contains framework /
+    // driver internals (DB constraint names, file paths, ORM stack
+    // text) that should not reach the client. Log raw above; return
+    // a stable generic message.
+    if (code >= 500) {
+      res.status(code).json({ error: 'Internal server error' });
+      return;
+    }
+    res.status(code).json({ error: err.message ?? 'Bad request' });
   },
 );
 
