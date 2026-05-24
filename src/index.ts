@@ -66,7 +66,7 @@ app.use(
   },
 );
 
-const port = Number(process.env.PORT) || 3000;
+const port = Number(process.env.PORT) || 4000;
 app.listen(port, () => {
   logger.info(`API listening on :${port}`);
 });

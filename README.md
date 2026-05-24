@@ -21,14 +21,14 @@ Tarrs auto-injects:
 - `SUPABASE_SERVICE_ROLE_KEY` (this server uses service role to bypass RLS)
 - `SUPABASE_JWT_SECRET` (for verifying user JWTs from frontend)
 
-Sandbox runs on port 3000 (default Tarrs ALB target).
+Sandbox runs on port 4000 (Tarrs convention for Express backends; frontend is :3000, Python/agent is :8080).
 
 ## Local dev
 
 ```bash
 pnpm install
 cp .env.example .env
-pnpm dev   # tsx watch, port 3000
+pnpm dev   # tsx watch, port 4000
 ```
 
 Apply the migration in `supabase/migrations/001_posts.sql` first.
