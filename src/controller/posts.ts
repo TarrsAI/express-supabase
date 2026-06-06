@@ -1,20 +1,20 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { supabase } from '../utility/supabase.js';
+import response from '../utility/response.js';
+import { httpErr } from '../utility/httpErr.js';
+import { HTTP_STATUS_CODE } from '../utility/httpStatusCode.js';
+import { listPosts, createPost, removePost } from '../service/posts.js';
+
+const UUID_RE = /^[0-9a-f-]{36}$/i;
 
 export const list = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('id, title, body, author_id, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (error) throw error;
-    res.json({ posts: data });
+    const posts = await listPosts(req);
+    response(res, HTTP_STATUS_CODE.OK, undefined, { posts });
   } catch (err) {
     next(err);
   }
@@ -29,24 +29,37 @@ export const create = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   try {
     const parsed = CreateBody.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.issues });
-      return;
+      throw httpErr('Validation failed', HTTP_STATUS_CODE.BAD_REQUEST, {
+        code: 'ERR_VALIDATION',
+      });
     }
-    const { data, error } = await supabase
-      .from('posts')
-      .insert({
-        title: parsed.data.title,
-        body: parsed.data.body,
-        author_id: req.user!.id,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    res.status(201).json({ post: data });
+    const post = await createPost(req, {
+      title: parsed.data.title,
+      body: parsed.data.body,
+      authorId: req.user!.id,
+    });
+    response(res, HTTP_STATUS_CODE.CREATED, 'Post created', { post });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const remove = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const id = req.params.id ?? '';
+    if (!UUID_RE.test(id)) {
+      throw httpErr('Invalid id', HTTP_STATUS_CODE.BAD_REQUEST);
+    }
+    await removePost(req, id);
+    response(res, HTTP_STATUS_CODE.NO_CONTENT);
   } catch (err) {
     next(err);
   }
