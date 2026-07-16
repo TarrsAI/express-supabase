@@ -28,7 +28,11 @@ const app = express();
 // for setups behind CloudFront + ALB (2 hops) or other layered fronts.
 app.set('trust proxy', Number(process.env.TRUST_PROXY ?? 1));
 
-app.use(helmet());
+// helmet, minus the two headers that break embedding: the default
+// frameguard (X-Frame-Options: SAMEORIGIN) and CSP (frame-ancestors
+// 'self') blank out the Tarrs workspace preview iframe — and a CSP on
+// a JSON API protects nothing anyway. nosniff/HSTS/etc. stay on.
+app.use(helmet({ contentSecurityPolicy: false, frameguard: false }));
 
 // CORS allowlist. Comma-separated origins; empty/unset = no cross-
 // origin requests. Bearer-auth API still needs CORS configured for
